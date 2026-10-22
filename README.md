@@ -22,7 +22,8 @@ React 19 + TypeScript + Vite + Tailwind CSS · tRPC 11 + Hono · Drizzle ORM + M
 ## Structure
 
 ```
-api/          Backend Hono + routers tRPC (auth, requests, contact)
+server/       Backend Hono + routers tRPC (auth, requests, contact)
+api/index.js  Fonction serverless Vercel (réexporte le serveur bundlé dist/vercel.js)
 contracts/    Types et données métier partagés (parcours, statuts, documents)
 db/           Schéma Drizzle (users, company_requests, request_events, contact_messages)
 src/
@@ -60,7 +61,15 @@ npm run dev            # http://localhost:3000 (frontend + API, HMR)
 
 ## Déploiement
 
-Le build de production bundle le serveur (`dist/boot.js`) et le frontend (`dist/public/`). Le serveur écoute sur le port 3000 et sert les deux.
+Le build de production (`npm run build`) génère trois sorties :
+
+- `dist/public/` — frontend statique ;
+- `dist/boot.js` — serveur autonome (VPS / Docker), qui écoute sur le port 3000 et sert les deux ;
+- `dist/vercel.js` — handler serverless consommé par `api/index.js` pour Vercel.
+
+### Vercel
+
+Le déploiement Vercel est piloté par `vercel.json` (build `npm run build`, sortie `dist/public`). Les requêtes `/api/*` sont servies par la fonction `api/index.js`, le reste par les fichiers statiques avec repli SPA vers `index.html`. Les variables `APP_ID`, `APP_SECRET`, `DATABASE_URL`, `KIMI_AUTH_URL` et `KIMI_OPEN_URL` doivent être définies dans les réglages du projet Vercel (obligatoires en production).
 
 ## Identité visuelle
 
