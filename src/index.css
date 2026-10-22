@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Palette NAEYA */
+    --background: 42 42% 91%; /* Ivoire minéral #F1EBDD */
+    --foreground: 223 45% 16%; /* Bleu encre #17233D */
+    --card: 42 50% 95%;
+    --card-foreground: 223 45% 16%;
+    --popover: 42 50% 95%;
+    --popover-foreground: 223 45% 16%;
+    --primary: 230 100% 54%; /* Bleu électrique #173DFF */
+    --primary-foreground: 42 42% 95%;
+    --secondary: 223 45% 16%; /* Bleu encre */
+    --secondary-foreground: 42 42% 91%;
+    --muted: 42 25% 85%;
+    --muted-foreground: 223 20% 38%;
+    --accent: 28 87% 54%; /* Orange signal #F08A24 */
+    --accent-foreground: 223 45% 16%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 42 42% 95%;
+    --border: 223 45% 16% / 0.16;
+    --input: 223 45% 16% / 0.24;
+    --ring: 230 100% 54%;
+    --radius: 0.375rem;
+    --sidebar-background: 223 45% 16%;
+    --sidebar-foreground: 42 42% 91%;
+    --sidebar-primary: 230 100% 54%;
+    --sidebar-primary-foreground: 42 42% 95%;
+    --sidebar-accent: 223 40% 22%;
+    --sidebar-accent-foreground: 42 42% 91%;
+    --sidebar-border: 223 40% 25%;
+    --sidebar-ring: 230 100% 54%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: "Archivo", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-display {
+    font-family: "Space Grotesk", "Archivo", system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+  :focus-visible {
+    outline: 3px solid hsl(var(--primary));
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Soulignement de marque : double barre orange + bleu */
+  .brand-underline {
+    @apply relative inline-block;
+  }
+  .brand-underline::after {
+    content: "";
+    display: block;
+    height: 4px;
+    margin-top: 8px;
+    width: 96px;
+    background: linear-gradient(
+      to right,
+      hsl(28 87% 54%) 0 44px,
+      hsl(230 100% 54%) 44px 96px
+    );
+  }
+  .brand-underline--light::after {
+    background: linear-gradient(
+      to right,
+      hsl(28 87% 54%) 0 44px,
+      hsl(42 42% 91%) 44px 96px
+    );
+  }
+
+  /* Bouton signature : bloc à coin sculpté (forme modulaire NAEYA) */
+  .btn-sculpt {
+    border-radius: 2px 18px 2px 18px;
+    transition: transform 150ms ease-out, background-color 150ms ease-out;
+  }
+  .btn-sculpt:hover {
+    transform: translateY(-2px);
+  }
+  .btn-sculpt:active {
+    transform: translateY(0);
+  }
+
+  /* Kicker de section */
+  .kicker {
+    @apply font-display text-xs font-semibold uppercase;
+    letter-spacing: 0.22em;
+    color: hsl(var(--primary));
+  }
+  .kicker--light {
+    color: hsl(28 87% 54%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
