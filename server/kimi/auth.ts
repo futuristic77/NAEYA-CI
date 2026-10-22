@@ -8,13 +8,14 @@ import { Session } from "@contracts/constants";
 import { Errors } from "@contracts/errors";
 import { signSessionToken, verifySessionToken } from "./session";
 import { users as kimiUsers } from "./platform";
-import { findUserByUnionId, upsertUser } from "../queries/users";
+import { findUserById, findUserByUnionId, upsertUser } from "../queries/users";
 import type { TokenResponse } from "./types";
 
 async function exchangeAuthCode(
   code: string,
   redirectUri: string,
 ): Promise<TokenResponse> {
+  if (!env.kimiEnabled) throw new Error("Kimi OAuth is not configured");
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     code,
@@ -37,14 +38,22 @@ async function exchangeAuthCode(
   return resp.json() as Promise<TokenResponse>;
 }
 
-const jwks = jose.createRemoteJWKSet(
-  new URL(`${env.kimiAuthUrl}/api/.well-known/jwks.json`),
-);
+let remoteJwks: ReturnType<typeof jose.createRemoteJWKSet> | undefined;
+
+function getJwks() {
+  if (!env.kimiEnabled) throw new Error("Kimi OAuth is not configured");
+  if (!remoteJwks) {
+    remoteJwks = jose.createRemoteJWKSet(
+      new URL(`${env.kimiAuthUrl}/api/.well-known/jwks.json`),
+    );
+  }
+  return remoteJwks;
+}
 
 async function verifyAccessToken(
   accessToken: string,
 ): Promise<{ userId: string; clientId: string }> {
-  const { payload } = await jose.jwtVerify(accessToken, jwks);
+  const { payload } = await jose.jwtVerify(accessToken, getJwks());
   const userId = payload.user_id as string;
   const clientId = payload.client_id as string;
   if (!userId) {
@@ -55,7 +64,8 @@ async function verifyAccessToken(
 
 export async function authenticateRequest(headers: Headers) {
   const cookies = cookie.parse(headers.get("cookie") || "");
-  const token = cookies[Session.cookieName];
+  const token =
+    cookies[Session.cookieName] || cookies[Session.legacyCookieName];
   if (!token) {
     console.warn("[auth] No session cookie found in request.");
     throw Errors.forbidden("Invalid authentication token.");
@@ -64,7 +74,11 @@ export async function authenticateRequest(headers: Headers) {
   if (!claim) {
     throw Errors.forbidden("Invalid authentication token.");
   }
-  const user = await findUserByUnionId(claim.unionId);
+  const user = claim.userId
+    ? await findUserById(claim.userId)
+    : claim.unionId
+      ? await findUserByUnionId(claim.unionId)
+      : undefined;
   if (!user) {
     throw Errors.forbidden("User not found. Please re-login.");
   }
@@ -73,6 +87,9 @@ export async function authenticateRequest(headers: Headers) {
 
 export function createOAuthCallbackHandler() {
   return async (c: Context) => {
+    if (!env.kimiEnabled) {
+      return c.json({ error: "Kimi OAuth is not configured" }, 503);
+    }
     const code = c.req.query("code");
     const state = c.req.query("state");
     const error = c.req.query("error");
@@ -101,7 +118,7 @@ export function createOAuthCallbackHandler() {
         throw new Error("Failed to fetch user profile from Kimi Open");
       }
 
-      await upsertUser({
+      const user = await upsertUser({
         unionId: userId,
         name: userProfile.name,
         avatar: userProfile.avatar_url,
@@ -109,7 +126,7 @@ export function createOAuthCallbackHandler() {
       });
 
       const token = await signSessionToken({
-        unionId: userId,
+        userId: user.id,
         clientId: env.appId,
       });
 

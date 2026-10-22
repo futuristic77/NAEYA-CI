@@ -20,6 +20,7 @@ export default function App() {
       <Route path="/faq" element={<Faq />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Login isSignUp />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
