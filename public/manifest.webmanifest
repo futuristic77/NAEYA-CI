@@ -1,0 +1,26 @@
+{
+  "name": "NAEYA — Création d'entreprise en Côte d'Ivoire",
+  "short_name": "NAEYA",
+  "description": "Plateforme ivoirienne d'accompagnement à la création d'entreprise : entreprise individuelle ou SARL.",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F1EBDD",
+  "theme_color": "#17233D",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
