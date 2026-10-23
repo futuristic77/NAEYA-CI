@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { Logo } from "@/components/Logo";
-import { trpc } from "@/providers/trpc";
+import { trpc } from "@/lib/trpc";
 
 export default function Login({ isSignUp = false }: { isSignUp?: boolean }) {
   const [name, setName] = useState("");
