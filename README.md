@@ -17,7 +17,7 @@
 
 ## Stack
 
-React 19 + TypeScript + Vite + Tailwind CSS · tRPC 11 + Hono · Drizzle ORM + MySQL · Comptes email/mot de passe et OAuth Kimi optionnel (sessions JWT, rôles `user` / `admin` vérifiés côté serveur).
+React 19 + TypeScript + Vite + Tailwind CSS · tRPC 11 + Hono · Drizzle ORM + MySQL · Authentification e-mail/mot de passe (sessions JWT, rôles `user` / `admin` vérifiés côté serveur).
 
 ## Structure
 
@@ -69,15 +69,17 @@ Le build de production (`npm run build`) génère trois sorties :
 
 ### Vercel
 
-Le déploiement Vercel est piloté par `vercel.json` (build `npm run build`, sortie `dist/public`). Les requêtes `/api/*` sont servies par la fonction `api/index.js`, le reste par les fichiers statiques avec repli SPA vers `index.html`. Les variables `APP_ID`, `APP_SECRET`, `DATABASE_URL`, `KIMI_AUTH_URL` et `KIMI_OPEN_URL` doivent être définies dans les réglages du projet Vercel (obligatoires en production).
+Le déploiement Vercel est piloté par `vercel.json` (build `npm run build`, sortie `dist/public`). Les requêtes `/api/*` sont servies par la fonction `api/index.js`, le reste par les fichiers statiques avec repli SPA vers `index.html`. Les variables `SESSION_SECRET` (32 octets minimum), `DATABASE_URL` et, pour le premier administrateur, `OWNER_EMAIL`, doivent être définies dans les réglages du projet Vercel (obligatoires en production).
 
 ## Authentification
 
-- Inscription et connexion par e-mail et mot de passe; les mots de passe sont hachés avec scrypt et ne sont jamais renvoyés au navigateur.
-- La session est signée côté serveur et stockée dans un cookie HttpOnly, Secure en production et SameSite=Lax. Les anciens cookies Kimi restent acceptés pendant la transition.
-- Kimi OAuth reste optionnel. En production, définir `SESSION_SECRET` (au moins 32 octets) dans les secrets de l'hébergeur; ne jamais le commiter. `APP_SECRET` n'est utilisé qu'en compatibilité pour les anciennes sessions et l'OAuth Kimi.
-- Pour une base existante, sauvegarder MySQL puis appliquer `db/migrations/0001-email-password-auth.sql` une fois, ou synchroniser le schéma avec `npm run db:push`.
-- Cette première version n'envoie pas de confirmation d'adresse ni de lien de réinitialisation; ces parcours nécessitent un service e-mail configuré avant un lancement grand public.
+- Inscription et connexion par e-mail et mot de passe ; les mots de passe sont hachés avec scrypt et ne sont jamais renvoyés au navigateur.
+- La session est signée côté serveur avec `SESSION_SECRET` et stockée dans un cookie HttpOnly `naeya_sid`, Secure en production et SameSite=Lax.
+- Le rôle `admin` est attribué au compte dont l'e-mail correspond à `OWNER_EMAIL` au moment de l'inscription.
+- Pour une base existante, sauvegarder MySQL puis appliquer `db/migrations/0001-email-password-auth.sql` puis `db/migrations/0002-remove-legacy-identity.sql`, ou synchroniser le schéma avec `npm run db:push`.
+- Les comptes créés via l'ancien fournisseur OAuth externe ne peuvent plus se connecter : l'identifiant fournisseur est supprimé. Leur nom et leur rôle restent en base ; une réinitialisation de mot de passe assistée est nécessaire si leur e-mail est absent.
+- Cette première version n'envoie pas de confirmation d'adresse ni de lien de réinitialisation ; ces parcours nécessitent un service e-mail configuré avant un lancement grand public.
+- Le projet ne contient aucun appel à un modèle de langage. OpenRouter n'est donc pas requis ; il ne remplacerait pas un fournisseur d'identité OAuth.
 
 ## Identité visuelle
 

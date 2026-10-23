@@ -3,21 +3,6 @@ import { Link, useNavigate } from "react-router";
 import { Logo } from "@/components/Logo";
 import { trpc } from "@/providers/trpc";
 
-function getOAuthUrl() {
-  const kimiAuthUrl = import.meta.env.VITE_KIMI_AUTH_URL;
-  const appID = import.meta.env.VITE_APP_ID;
-  const redirectUri = `${window.location.origin}/api/oauth/callback`;
-  const state = btoa(redirectUri);
-
-  const url = new URL(`${kimiAuthUrl}/api/oauth/authorize`);
-  url.searchParams.set("client_id", appID);
-  url.searchParams.set("redirect_uri", redirectUri);
-  url.searchParams.set("response_type", "code");
-  url.searchParams.set("scope", "profile");
-  url.searchParams.set("state", state);
-  return url.toString();
-}
-
 export default function Login({ isSignUp = false }: { isSignUp?: boolean }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -35,9 +20,6 @@ export default function Login({ isSignUp = false }: { isSignUp?: boolean }) {
   const signIn = trpc.auth.signIn.useMutation({ onSuccess, onError });
   const signUp = trpc.auth.signUp.useMutation({ onSuccess, onError });
   const isPending = signIn.isPending || signUp.isPending;
-  const kimiConfigured = Boolean(
-    import.meta.env.VITE_APP_ID && import.meta.env.VITE_KIMI_AUTH_URL,
-  );
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -140,25 +122,6 @@ export default function Login({ isSignUp = false }: { isSignUp?: boolean }) {
             {isSignUp ? "Se connecter" : "Créer un compte"}
           </Link>
         </p>
-
-        {kimiConfigured && (
-          <>
-            <div className="my-6 flex items-center gap-3 text-xs text-[#17233D]/45">
-              <span className="h-px flex-1 bg-[#17233D]/15" />
-              <span>ou</span>
-              <span className="h-px flex-1 bg-[#17233D]/15" />
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                window.location.href = getOAuthUrl();
-              }}
-              className="w-full rounded-lg border border-[#17233D]/20 px-6 py-3 text-sm font-semibold text-[#17233D] hover:bg-white/60"
-            >
-              Continuer avec Kimi
-            </button>
-          </>
-        )}
 
         <p className="mt-5 text-center text-xs text-[#17233D]/55">
           <Link to="/" className="underline underline-offset-4">

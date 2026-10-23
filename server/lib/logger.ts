@@ -5,8 +5,8 @@ import path from "path";
 import { currentRequestId } from "./requestcontext";
 import { scrubCtx, scrubValue } from "./scrub";
 
-const LOG_DIR = process.env.KIMI_LOG_DIR ?? "/tmp/kimi-logs";
-const LOG_FILE = process.env.KIMI_LOG_FILE ?? path.join(LOG_DIR, "app.log");
+const LOG_DIR = process.env.NAEYA_LOG_DIR ?? "/tmp/naeya-logs";
+const LOG_FILE = process.env.NAEYA_LOG_FILE ?? path.join(LOG_DIR, "app.log");
 // Budget explicite : 8 Mio, au-delà le fichier est tronqué une fois avec marqueur.
 const LOG_MAX_BYTES = 8 * 1024 * 1024;
 

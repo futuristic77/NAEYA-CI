@@ -15,7 +15,7 @@ import {
   hashPassword,
   verifyPassword,
 } from "./auth/password";
-import { signSessionToken } from "./kimi/session";
+import { signSessionToken } from "./auth/session";
 import type { TrpcContext } from "./context";
 
 const signInInput = z.object({
@@ -41,9 +41,8 @@ function publicUser(user: User) {
 async function setSessionCookie(
   ctx: TrpcContext,
   userId: number,
-  clientId: string,
 ) {
-  const token = await signSessionToken({ userId, clientId });
+  const token = await signSessionToken({ userId });
   const options = getSessionCookieOptions(ctx.req.headers);
   ctx.resHeaders.append(
     "set-cookie",
@@ -96,7 +95,7 @@ export const authRouter = createRouter({
         throw error;
       }
 
-      await setSessionCookie(ctx, user.id, "naeya-password");
+      await setSessionCookie(ctx, user.id);
       return publicUser(user);
     }),
 
@@ -116,25 +115,23 @@ export const authRouter = createRouter({
       }
 
       await updateLastSignInAt(user.id);
-      await setSessionCookie(ctx, user.id, "naeya-password");
+      await setSessionCookie(ctx, user.id);
       return publicUser(user);
     }),
 
   logout: authedQuery.mutation(async ({ ctx }) => {
     const options = getSessionCookieOptions(ctx.req.headers);
-    for (const name of [Session.cookieName, Session.legacyCookieName]) {
-      ctx.resHeaders.append(
-        "set-cookie",
-        cookie.serialize(name, "", {
-          httpOnly: true,
-          path: options.path,
-          sameSite: "lax",
-          secure: options.secure,
-          maxAge: 0,
-          expires: new Date(0),
-        }),
-      );
-    }
+    ctx.resHeaders.append(
+      "set-cookie",
+      cookie.serialize(Session.cookieName, "", {
+        httpOnly: true,
+        path: options.path,
+        sameSite: "lax",
+        secure: options.secure,
+        maxAge: 0,
+        expires: new Date(0),
+      }),
+    );
     return { success: true };
   }),
 });
