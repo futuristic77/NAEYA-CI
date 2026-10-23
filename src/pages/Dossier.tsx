@@ -14,16 +14,24 @@ export default function Dossier() {
   });
   const detail = trpc.requests.byId.useQuery(
     { id: selectedId! },
-    { enabled: selectedId !== null },
+    { enabled: isAuthenticated && selectedId !== null },
   );
 
-  if (isLoading || (isAuthenticated && mine.isLoading)) {
+  if (isLoading || mine.isLoading) {
     return (
       <Layout>
         <div className="mx-auto max-w-4xl px-4 py-20 text-center text-[#17233D]/60">
           Chargement de votre espace…
         </div>
       </Layout>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-[#F1EBDD] px-4 text-center text-[#17233D]/60">
+        Redirection vers la connexion…
+      </div>
     );
   }
 

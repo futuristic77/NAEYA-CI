@@ -15,7 +15,7 @@ const NAV = [
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isLoggingOut, logout } = useAuth();
   const navigate = useNavigate();
 
   const close = () => setOpen(false);
@@ -75,9 +75,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 )}
                 <button
                   onClick={logout}
-                  className="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold text-[#17233D]/70 hover:text-[#17233D]"
+                  disabled={isLoggingOut}
+                  aria-busy={isLoggingOut}
+                  className="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold text-[#17233D]/70 hover:text-[#17233D] disabled:cursor-wait disabled:opacity-60"
                 >
-                  <LogOut size={16} aria-hidden /> Sortir
+                  <LogOut size={16} aria-hidden />{" "}
+                  {isLoggingOut ? "Déconnexion…" : "Déconnexion"}
                 </button>
               </>
             ) : (
@@ -144,9 +147,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       close();
                       logout();
                     }}
-                    className="py-2 text-sm font-semibold text-[#17233D]/70"
+                    disabled={isLoggingOut}
+                    aria-busy={isLoggingOut}
+                    className="py-2 text-sm font-semibold text-[#17233D]/70 disabled:cursor-wait disabled:opacity-60"
                   >
-                    Se déconnecter
+                    {isLoggingOut ? "Déconnexion…" : "Se déconnecter"}
                   </button>
                 </>
               ) : (

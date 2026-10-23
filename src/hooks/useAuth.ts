@@ -1,5 +1,7 @@
 import { trpc } from "@/lib/trpc";
+import { isUnauthorizedError } from "@/lib/auth-error";
 import { useCallback, useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { LOGIN_PATH } from "@/const";
 
@@ -13,8 +15,7 @@ export function useAuth(options?: UseAuthOptions) {
     options ?? {};
 
   const navigate = useNavigate();
-
-  const utils = trpc.useUtils();
+  const queryClient = useQueryClient();
 
   const {
     data: user,
@@ -22,37 +23,62 @@ export function useAuth(options?: UseAuthOptions) {
     error,
     refetch,
   } = trpc.auth.me.useQuery(undefined, {
-    staleTime: 1000 * 60 * 5,
+    staleTime: 0,
     retry: false,
   });
 
+  const clearPrivateState = useCallback(() => {
+    queryClient.removeQueries();
+  }, [queryClient]);
+
   const logoutMutation = trpc.auth.logout.useMutation({
-    onSuccess: async () => {
-      await utils.invalidate();
-      navigate(redirectPath);
+    onSuccess: () => {
+      clearPrivateState();
+      navigate(redirectPath, { replace: true });
     },
   });
 
-  const logout = useCallback(() => logoutMutation.mutate(), [logoutMutation]);
+  const logout = useCallback(() => {
+    if (logoutMutation.isPending) return;
+    logoutMutation.mutate();
+  }, [logoutMutation]);
 
   useEffect(() => {
-    if (redirectOnUnauthenticated && !isLoading && !user) {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) void refetch();
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, [refetch]);
+
+  const currentUser = isUnauthorizedError(error) ? null : user ?? null;
+
+  useEffect(() => {
+    if (redirectOnUnauthenticated && !isLoading && !currentUser) {
       const currentPath = window.location.pathname;
       if (currentPath !== redirectPath) {
-        navigate(redirectPath);
+        navigate(redirectPath, { replace: true });
       }
     }
-  }, [redirectOnUnauthenticated, isLoading, user, navigate, redirectPath]);
+  }, [redirectOnUnauthenticated, isLoading, currentUser, navigate, redirectPath]);
 
   return useMemo(
     () => ({
-      user: user ?? null,
-      isAuthenticated: !!user,
+      user: currentUser,
+      isAuthenticated: !!currentUser,
       isLoading: isLoading || logoutMutation.isPending,
+      isLoggingOut: logoutMutation.isPending,
       error,
       logout,
       refresh: refetch,
     }),
-    [user, isLoading, logoutMutation.isPending, error, logout, refetch],
+    [
+      currentUser,
+      isLoading,
+      logoutMutation.isPending,
+      error,
+      logout,
+      refetch,
+    ],
   );
 }
