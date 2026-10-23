@@ -48,6 +48,14 @@ export default function Admin() {
     );
   }
 
+  if (!user) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-[#F1EBDD] px-4 text-center text-[#17233D]/60">
+        Redirection vers la connexion…
+      </div>
+    );
+  }
+
   if (!isAdmin) {
     return (
       <Layout>

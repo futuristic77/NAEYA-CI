@@ -1,7 +1,16 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { Logo } from "@/components/Logo";
 import { trpc } from "@/lib/trpc";
+
+type AuthUser = {
+  id: number;
+  name: string | null;
+  email: string | null;
+  avatar: string | null;
+  role: "user" | "admin";
+};
 
 export default function Login({ isSignUp = false }: { isSignUp?: boolean }) {
   const [name, setName] = useState("");
@@ -9,10 +18,12 @@ export default function Login({ isSignUp = false }: { isSignUp?: boolean }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const utils = trpc.useUtils();
 
-  const onSuccess = async () => {
-    await utils.auth.me.invalidate();
+  const onSuccess = (user: AuthUser) => {
+    queryClient.removeQueries();
+    utils.auth.me.setData(undefined, user);
     navigate("/dossier", { replace: true });
   };
   const onError = (cause: { message: string }) => setError(cause.message);

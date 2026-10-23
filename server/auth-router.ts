@@ -119,7 +119,7 @@ export const authRouter = createRouter({
       return publicUser(user);
     }),
 
-  logout: authedQuery.mutation(async ({ ctx }) => {
+  logout: publicQuery.mutation(async ({ ctx }) => {
     const options = getSessionCookieOptions(ctx.req.headers);
     ctx.resHeaders.append(
       "set-cookie",
