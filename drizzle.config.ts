@@ -8,8 +8,8 @@ if (!connectionString) {
 
 export default defineConfig({
   schema: "./db/schema.ts",
-  out: "./db/migrations",
-  dialect: "mysql",
+  out: "./db/migrations/postgres",
+  dialect: "postgresql",
   dbCredentials: {
     url: connectionString,
   },
