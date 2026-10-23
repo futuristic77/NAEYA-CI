@@ -1,19 +1,33 @@
 import "dotenv/config";
 
+const isProduction = process.env.NODE_ENV === "production";
+
+function optional(name: string): string {
+  return process.env[name] ?? "";
+}
+
 function required(name: string): string {
-  const value = process.env[name];
-  if (!value && process.env.NODE_ENV === "production") {
+  const value = optional(name);
+  if (!value && isProduction) {
     throw new Error(`Missing required environment variable: ${name}`);
   }
-  return value ?? "";
+  return value;
+}
+
+const sessionSecret =
+  optional("SESSION_SECRET") ||
+  (isProduction ? "" : "naeya-development-session-secret-do-not-use-in-production");
+
+if (isProduction && !sessionSecret) {
+  throw new Error("SESSION_SECRET is required in production");
+}
+if (isProduction && Buffer.byteLength(sessionSecret) < 32) {
+  throw new Error("SESSION_SECRET must contain at least 32 bytes");
 }
 
 export const env = {
-  appId: required("APP_ID"),
-  appSecret: required("APP_SECRET"),
-  isProduction: process.env.NODE_ENV === "production",
+  isProduction,
+  sessionSecret,
   databaseUrl: required("DATABASE_URL"),
-  kimiAuthUrl: required("KIMI_AUTH_URL"),
-  kimiOpenUrl: required("KIMI_OPEN_URL"),
-  ownerUnionId: process.env.OWNER_UNION_ID ?? "",
+  ownerEmail: optional("OWNER_EMAIL").trim().toLowerCase(),
 };

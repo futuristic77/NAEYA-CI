@@ -6,12 +6,10 @@ function isLocalhost(headers: Headers): boolean {
 }
 
 export function getSessionCookieOptions(headers: Headers): CookieOptions {
-  const localhost = isLocalhost(headers);
-
   return {
     httpOnly: true,
     path: "/",
-    sameSite: localhost ? "Lax" : "None",
-    secure: !localhost,
+    sameSite: "Lax",
+    secure: !isLocalhost(headers),
   };
 }
