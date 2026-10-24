@@ -1,11 +1,14 @@
 import { useState } from "react";
 import Layout from "@/components/Layout";
+import DocumentsPanel from "@/components/DocumentsPanel";
 import StatusBadge from "@/components/StatusBadge";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import {
   REQUEST_STATUSES,
   STATUS_LABELS,
+  requiresCapital,
+  requiresManager,
   type RequestStatus,
 } from "@contracts/naeya";
 
@@ -36,6 +39,13 @@ export default function Admin() {
   });
   const markHandled = trpc.contact.markHandled.useMutation({
     onSuccess: () => utils.contact.invalidate(),
+  });
+  const purgeDocuments = trpc.requests.purgeDocuments.useMutation({
+    onSuccess: async (result) => {
+      setFeedback(`${result.deleted} document(s) supprimé(s) du stockage.`);
+      await utils.requests.adminById.invalidate({ id: selectedId! });
+    },
+    onError: (e) => setFeedback(`Erreur : ${e.message}`),
   });
 
   if (isLoading) {
@@ -145,11 +155,11 @@ export default function Admin() {
               <div><dt className="text-[#17233D]/55">Contact</dt><dd className="font-semibold">{detail.data.request.phone} · {detail.data.request.email}</dd></div>
               <div><dt className="text-[#17233D]/55">Ville</dt><dd className="font-semibold">{detail.data.request.city}</dd></div>
               <div><dt className="text-[#17233D]/55">Secteur</dt><dd className="font-semibold">{detail.data.request.activitySector}</dd></div>
-              {detail.data.request.legalForm === "SARL" && (
-                <>
-                  <div><dt className="text-[#17233D]/55">Capital</dt><dd className="font-semibold">{detail.data.request.capital?.toLocaleString("fr-FR")} FCFA</dd></div>
-                  <div><dt className="text-[#17233D]/55">Gérant</dt><dd className="font-semibold">{detail.data.request.managerName}</dd></div>
-                </>
+              {requiresCapital(detail.data.request.legalForm) && (
+                <div><dt className="text-[#17233D]/55">Capital</dt><dd className="font-semibold">{detail.data.request.capital?.toLocaleString("fr-FR")} FCFA</dd></div>
+              )}
+              {requiresManager(detail.data.request.legalForm) && (
+                <div><dt className="text-[#17233D]/55">Gérant / représentant</dt><dd className="font-semibold">{detail.data.request.managerName}</dd></div>
               )}
             </dl>
             <p className="mt-3 text-sm text-[#17233D]/80">{detail.data.request.activity}</p>
@@ -205,6 +215,33 @@ export default function Admin() {
                 Mettre à jour
               </button>
             </form>
+
+            <DocumentsPanel
+              requestId={selectedId}
+              documents={detail.data.documents}
+              canDelete
+              onChanged={() => {
+                void utils.requests.adminById.invalidate({ id: selectedId });
+              }}
+            />
+            {detail.data.documents.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (
+                    !window.confirm(
+                      "Supprimer définitivement toutes les pièces de ce dossier du stockage privé ?",
+                    )
+                  )
+                    return;
+                  purgeDocuments.mutate({ requestId: selectedId });
+                }}
+                disabled={purgeDocuments.isPending}
+                className="mt-3 text-sm font-semibold text-[#B42318] underline-offset-4 hover:underline disabled:opacity-60"
+              >
+                Supprimer toutes les pièces du stockage
+              </button>
+            )}
 
             <h3 className="mt-6 font-display text-sm font-bold uppercase tracking-widest text-[#F08A24]">
               Historique

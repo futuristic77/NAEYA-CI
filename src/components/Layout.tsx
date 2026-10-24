@@ -210,7 +210,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
           <div className="mt-10 flex flex-col gap-2 border-t border-[#F1EBDD]/15 pt-6 text-xs text-[#F1EBDD]/50 md:flex-row md:justify-between">
             <span>© {new Date().getFullYear()} NAEYA CI — Abidjan, Côte d'Ivoire</span>
-            <span>Votre idée prend forme.</span>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link to="/politique-confidentialite" className="hover:text-white">
+                Politique de confidentialité
+              </Link>
+              <span aria-hidden>·</span>
+              <Link to="/politique-suppression-documents" className="hover:text-white">
+                Politique de suppression des documents
+              </Link>
+              <span aria-hidden>·</span>
+              <span>Votre idée prend forme.</span>
+            </div>
           </div>
         </div>
       </footer>

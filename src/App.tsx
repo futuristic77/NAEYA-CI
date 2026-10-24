@@ -8,6 +8,8 @@ import Faq from "./pages/Faq";
 import Contact from "./pages/Contact";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import PolitiqueConfidentialite from "./pages/PolitiqueConfidentialite";
+import PolitiqueSuppressionDocuments from "./pages/PolitiqueSuppressionDocuments";
 
 export default function App() {
   return (
@@ -21,6 +23,8 @@ export default function App() {
       <Route path="/contact" element={<Contact />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Login isSignUp />} />
+      <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+      <Route path="/politique-suppression-documents" element={<PolitiqueSuppressionDocuments />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

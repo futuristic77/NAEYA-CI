@@ -1,21 +1,30 @@
 import { useState } from "react";
 import Layout from "@/components/Layout";
+import DocumentsPanel from "@/components/DocumentsPanel";
 import StatusBadge from "@/components/StatusBadge";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { STATUS_DESCRIPTIONS, type RequestStatus } from "@contracts/naeya";
+import { MessageCircle } from "lucide-react";
 
 export default function Dossier() {
   const { isAuthenticated, isLoading } = useAuth({ redirectOnUnauthenticated: true });
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
+  const utils = trpc.useUtils();
   const mine = trpc.requests.mine.useQuery(undefined, {
     enabled: isAuthenticated,
   });
   const detail = trpc.requests.byId.useQuery(
     { id: selectedId! },
-    { enabled: isAuthenticated && selectedId !== null },
+    { enabled: selectedId !== null },
   );
+
+  const whatsappUrl = selectedId && detail.data?.request
+    ? `https://wa.me/2250555704513?text=${encodeURIComponent(
+        `Bonjour, je souhaite discuter au sujet de mon dossier NAEYA - Réf. ${detail.data.request.reference} (${detail.data.request.legalForm})`,
+      )}`
+    : null;
 
   if (isLoading || mine.isLoading) {
     return (
@@ -67,7 +76,7 @@ export default function Dossier() {
                 <div>
                   <h2 className="font-display text-lg font-bold">{r.projectName}</h2>
                   <p className="text-sm text-[#17233D]/60">
-                    Réf. {r.reference} · {r.legalForm === "EI" ? "Entreprise individuelle" : "SARL"} ·{" "}
+                    Réf. {r.reference} · {r.legalForm} ·{" "}
                     {new Date(r.createdAt).toLocaleDateString("fr-FR")}
                   </p>
                 </div>
@@ -85,23 +94,47 @@ export default function Dossier() {
               </button>
 
               {selectedId === r.id && detail.data && (
-                <ol className="mt-4 space-y-3 border-l-2 border-[#173DFF]/30 pl-4">
-                  {detail.data.events.map((ev) => (
-                    <li key={ev.id} className="text-sm">
-                      <span className="font-semibold">
-                        {new Date(ev.createdAt).toLocaleDateString("fr-FR", {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                        })}
-                      </span>{" "}
-                      — <StatusBadge status={ev.status as RequestStatus} />
-                      {ev.comment && (
-                        <span className="block mt-1 text-[#17233D]/70">{ev.comment}</span>
-                      )}
-                    </li>
-                  ))}
-                </ol>
+                <>
+                  {whatsappUrl && (
+                    <div className="mt-4">
+                      <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-sculpt inline-flex items-center gap-2 bg-[#25D366] px-5 py-2.5 font-semibold text-white"
+                      >
+                        <MessageCircle size={18} aria-hidden />
+                        Discuter avec un agent sur WhatsApp
+                      </a>
+                    </div>
+                  )}
+                  <DocumentsPanel
+                    requestId={r.id}
+                    documents={detail.data.documents}
+                    canUpload
+                    canDelete
+                    onChanged={() => {
+                      void utils.requests.byId.invalidate({ id: r.id });
+                    }}
+                  />
+                  <ol className="mt-4 space-y-3 border-l-2 border-[#173DFF]/30 pl-4">
+                    {detail.data.events.map((ev) => (
+                      <li key={ev.id} className="text-sm">
+                        <span className="font-semibold">
+                          {new Date(ev.createdAt).toLocaleDateString("fr-FR", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })}
+                        </span>{" "}
+                        — <StatusBadge status={ev.status as RequestStatus} />
+                        {ev.comment && (
+                          <span className="block mt-1 text-[#17233D]/70">{ev.comment}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                </>
               )}
             </article>
           ))}

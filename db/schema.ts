@@ -7,10 +7,23 @@ import {
   timestamp,
   bigint,
   boolean,
+  index,
 } from "drizzle-orm/pg-core";
 
 export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
-export const legalFormEnum = pgEnum("legal_form", ["EI", "SARL"]);
+export const legalFormEnum = pgEnum("legal_form", [
+  "EI",
+  "SARL",
+  "SARLU",
+  "SA",
+  "SAS",
+  "SASU",
+  "SNC",
+  "SCS",
+  "SCI_COMMERCIALE",
+  "SUCCURSALE",
+  "BUREAU_REPRESENTATION",
+]);
 export const requestStatusEnum = pgEnum("request_status", [
   "RECUE",
   "EN_ETUDE",
@@ -57,7 +70,7 @@ export const companyRequests = pgTable("company_requests", {
   projectName: varchar("projectName", { length: 255 }).notNull(),
   activity: text("activity").notNull(),
   activitySector: varchar("activitySector", { length: 120 }).notNull(),
-  // Spécifique SARL (null pour EI)
+  // Spécifique (à adapter selon forme juridique)
   capital: bigint("capital", { mode: "number" }),
   associatesCount: bigint("associatesCount", { mode: "number" }),
   managerName: varchar("managerName", { length: 255 }),
@@ -83,6 +96,27 @@ export const requestEvents = pgTable("request_events", {
 });
 
 export type RequestEvent = typeof requestEvents.$inferSelect;
+
+// Pièces justificatives stockées dans un bucket privé. Le fichier binaire est
+// supprimé du stockage lors d'une suppression ; la ligne conserve la trace.
+export const requestDocuments = pgTable(
+  "request_documents",
+  {
+    id: serial("id").primaryKey(),
+    requestId: bigint("requestId", { mode: "number" }).notNull(),
+    uploadedBy: bigint("uploadedBy", { mode: "number" }).notNull(),
+    originalName: varchar("originalName", { length: 255 }).notNull(),
+    mimeType: varchar("mimeType", { length: 120 }).notNull(),
+    sizeBytes: bigint("sizeBytes", { mode: "number" }).notNull(),
+    storagePath: text("storagePath").notNull().unique(),
+    createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+    deletedAt: timestamp("deletedAt", { withTimezone: true }),
+    deletedBy: bigint("deletedBy", { mode: "number" }),
+  },
+  (table) => [index("request_documents_request_idx").on(table.requestId)],
+);
+
+export type RequestDocument = typeof requestDocuments.$inferSelect;
 
 // Messages du formulaire de contact
 export const contactMessages = pgTable("contact_messages", {

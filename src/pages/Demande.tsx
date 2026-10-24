@@ -11,6 +11,12 @@ import { Label } from "@/components/ui/label";
 import {
   ACTIVITY_SECTORS,
   REQUIRED_DOCUMENTS,
+  LEGAL_FORMS,
+  LEGAL_FORM_LABELS,
+  LEGAL_FORM_DESCRIPTIONS,
+  requiresCapital,
+  requiresManager,
+  tracksAssociates,
   type LegalForm,
 } from "@contracts/naeya";
 
@@ -46,9 +52,12 @@ const STEP_TITLES = ["Forme juridique", "Vous", "Votre projet", "Récapitulatif"
 
 export default function Demande() {
   const [params] = useSearchParams();
+  const formeParam = params.get("forme")?.toUpperCase();
   const initialForm: LegalForm =
-    params.get("forme") === "SARL" ? "SARL" : params.get("forme") === "EI" ? "EI" : "EI";
-  const preselected = params.get("forme") === "SARL" || params.get("forme") === "EI";
+    formeParam && LEGAL_FORMS.includes(formeParam as LegalForm)
+      ? (formeParam as LegalForm)
+      : "EI";
+  const preselected = !!(formeParam && LEGAL_FORMS.includes(formeParam as LegalForm));
 
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
@@ -70,6 +79,9 @@ export default function Demande() {
   ) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const docs = useMemo(() => REQUIRED_DOCUMENTS[legalForm], [legalForm]);
+  const capitalRequired = requiresCapital(legalForm);
+  const managerRequired = requiresManager(legalForm);
+  const associatesTracked = tracksAssociates(legalForm);
 
   function validateStep(current: number): boolean {
     const next: typeof errors = {};
@@ -86,11 +98,13 @@ export default function Demande() {
       if (!form.activitySector) next.activitySector = "Secteur requis.";
       if (form.activity.trim().length < 10)
         next.activity = "Décrivez votre activité (min. 10 caractères).";
-      if (legalForm === "SARL") {
+      if (capitalRequired) {
         if (!form.capital || Number(form.capital) <= 0)
-          next.capital = "Capital social requis pour une SARL.";
+          next.capital = "Capital social requis pour cette forme juridique.";
+      }
+      if (managerRequired) {
         if (form.managerName.trim().length < 3)
-          next.managerName = "Nom du gérant requis pour une SARL.";
+          next.managerName = "Nom du gérant/président/représentant requis pour cette forme juridique.";
       }
     }
     setErrors(next);
@@ -120,12 +134,12 @@ export default function Demande() {
       projectName: form.projectName.trim(),
       activity: form.activity.trim(),
       activitySector: form.activitySector,
-      capital: legalForm === "SARL" ? Number(form.capital) : undefined,
+      capital: capitalRequired ? Number(form.capital) : undefined,
       associatesCount:
-        legalForm === "SARL" && form.associatesCount
+        associatesTracked && form.associatesCount
           ? Number(form.associatesCount)
           : undefined,
-      managerName: legalForm === "SARL" ? form.managerName.trim() : undefined,
+      managerName: managerRequired ? form.managerName.trim() : undefined,
       notes: form.notes.trim() || undefined,
     });
   }
@@ -197,8 +211,11 @@ export default function Demande() {
               <legend className="font-display text-xl font-bold">
                 Quelle forme juridique ?
               </legend>
+              <p className="mt-2 text-sm text-[#17233D]/70">
+                Sélectionnez la forme juridique proposée par le CEPICI. Les listes de pièces ci-dessous sont indicatives et adaptées selon le cas ; elles seront précisées lors de l'instruction.
+              </p>
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                {(["EI", "SARL"] as const).map((f) => (
+                {LEGAL_FORMS.map((f) => (
                   <button
                     key={f}
                     type="button"
@@ -211,21 +228,21 @@ export default function Demande() {
                     }`}
                   >
                     <span className="font-display text-lg font-bold">
-                      {f === "EI" ? "Entreprise individuelle" : "SARL"}
+                      {LEGAL_FORM_LABELS[f]}
                     </span>
                     <span className="mt-1 block text-sm text-[#17233D]/70">
-                      {f === "EI"
-                        ? "Seul, simplement, sans capital minimum."
-                        : "Seul ou à plusieurs, responsabilité limitée."}
+                      {LEGAL_FORM_DESCRIPTIONS[f]}
                     </span>
                   </button>
                 ))}
               </div>
 
               <h2 className="mt-8 flex items-center gap-2 font-display text-sm font-bold uppercase tracking-widest text-[#F08A24]">
-                <FileText size={16} aria-hidden /> Documents à prévoir —{" "}
-                {legalForm === "EI" ? "Entreprise individuelle" : "SARL"}
+                <FileText size={16} aria-hidden /> Documents à prévoir — {LEGAL_FORM_LABELS[legalForm]}
               </h2>
+              <p className="mt-2 text-xs text-[#17233D]/60">
+                Ces éléments sont fournis à titre indicatif à partir de principes usuels du droit OHADA/CEPICI. Ils ne se substituent pas à la liste officielle vérifiée au moment du dépôt.
+              </p>
               <ul className="mt-3 space-y-2 text-sm">
                 {docs.map((doc) => (
                   <li key={doc.title} className="rounded-lg bg-white p-3">
@@ -296,10 +313,10 @@ export default function Demande() {
                 {errors.activity && <p className="mt-1 text-sm font-medium text-[#B42318]">{errors.activity}</p>}
               </div>
 
-              {legalForm === "SARL" && (
+              {capitalRequired && (
                 <div className="space-y-4 rounded-xl border border-[#173DFF]/25 bg-[#173DFF]/5 p-4">
                   <h3 className="font-display text-sm font-bold uppercase tracking-widest text-[#173DFF]">
-                    Informations SARL
+                    Informations complémentaires
                   </h3>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
@@ -308,12 +325,42 @@ export default function Demande() {
                       {errors.capital && <p className="mt-1 text-sm font-medium text-[#B42318]">{errors.capital}</p>}
                     </div>
                     <div>
+                      <Label htmlFor="associatesCount">Nombre d'associés / actionnaires</Label>
+                      <Input id="associatesCount" type="number" min={1} max={100} value={form.associatesCount} onChange={set("associatesCount")} className="mt-1.5 bg-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="managerName">Nom du gérant / président / représentant *</Label>
+                    <Input id="managerName" value={form.managerName} onChange={set("managerName")} className="mt-1.5 bg-white" />
+                    {errors.managerName && <p className="mt-1 text-sm font-medium text-[#B42318]">{errors.managerName}</p>}
+                  </div>
+                </div>
+              )}
+              {associatesTracked && !capitalRequired && (
+                <div className="space-y-4 rounded-xl border border-[#173DFF]/25 bg-[#173DFF]/5 p-4">
+                  <h3 className="font-display text-sm font-bold uppercase tracking-widest text-[#173DFF]">
+                    Informations complémentaires
+                  </h3>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
                       <Label htmlFor="associatesCount">Nombre d'associés</Label>
                       <Input id="associatesCount" type="number" min={1} max={100} value={form.associatesCount} onChange={set("associatesCount")} className="mt-1.5 bg-white" />
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="managerName">Nom du gérant *</Label>
+                    <Label htmlFor="managerName">Nom du gérant / représentant *</Label>
+                    <Input id="managerName" value={form.managerName} onChange={set("managerName")} className="mt-1.5 bg-white" />
+                    {errors.managerName && <p className="mt-1 text-sm font-medium text-[#B42318]">{errors.managerName}</p>}
+                  </div>
+                </div>
+              )}
+              {managerRequired && !capitalRequired && !associatesTracked && (
+                <div className="space-y-4 rounded-xl border border-[#173DFF]/25 bg-[#173DFF]/5 p-4">
+                  <h3 className="font-display text-sm font-bold uppercase tracking-widest text-[#173DFF]">
+                    Informations complémentaires
+                  </h3>
+                  <div>
+                    <Label htmlFor="managerName">Nom du représentant légal *</Label>
                     <Input id="managerName" value={form.managerName} onChange={set("managerName")} className="mt-1.5 bg-white" />
                     {errors.managerName && <p className="mt-1 text-sm font-medium text-[#B42318]">{errors.managerName}</p>}
                   </div>
@@ -333,18 +380,20 @@ export default function Demande() {
               <h2 className="font-display text-xl font-bold">Récapitulatif</h2>
               <dl className="mt-5 space-y-3 text-sm">
                 {[
-                  ["Forme juridique", legalForm === "EI" ? "Entreprise individuelle" : "SARL"],
+                  ["Forme juridique", LEGAL_FORM_LABELS[legalForm]],
                   ["Nom complet", form.fullName],
                   ["Téléphone", form.phone],
                   ["E-mail", form.email],
                   ["Ville", form.city],
                   ["Projet", form.projectName],
                   ["Secteur", form.activitySector],
-                  ...(legalForm === "SARL"
+                  ...(capitalRequired && form.capital
                     ? [
                         ["Capital social", `${Number(form.capital).toLocaleString("fr-FR")} FCFA`],
-                        ["Gérant", form.managerName],
                       ]
+                    : []),
+                  ...(managerRequired && form.managerName
+                    ? [["Gérant / représentant", form.managerName]]
                     : []),
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between gap-4 border-b border-[#17233D]/10 pb-2">
@@ -356,7 +405,7 @@ export default function Demande() {
               <p className="mt-4 rounded-xl border border-[#F08A24]/40 bg-[#F08A24]/10 p-4 text-sm">
                 En validant, vous demandez un accompagnement NAEYA. Aucun paiement
                 n'est exigé à cette étape et aucune immatriculation n'est
-                déclarée : un conseiller vous contactera pour la suite.
+                déclarée : un conseiller vous contactera pour la suite. Les pièces à fournir pourront être précisées par un conseiller à partir de la liste indicative ci-dessus.
               </p>
               {submitError && (
                 <p role="alert" className="mt-3 text-sm font-semibold text-[#B42318]">
@@ -395,6 +444,11 @@ export default function Demande() {
                 {createMutation.isPending ? "Envoi en cours…" : "Valider ma demande"}
               </button>
             )}
+          </div>
+          <div className="mt-6 text-center text-xs text-[#17233D]/60">
+            <a href="/politique-confidentialite" className="hover:underline">Politique de confidentialité</a>
+            <span className="mx-2">·</span>
+            <a href="/politique-suppression-documents" className="hover:underline">Politique de suppression des documents</a>
           </div>
         </div>
       </section>

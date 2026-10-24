@@ -1,7 +1,12 @@
 import { Link } from "react-router";
 import { ArrowRight, Check } from "lucide-react";
 import Layout from "@/components/Layout";
-import { REQUIRED_DOCUMENTS } from "@contracts/naeya";
+import {
+  LEGAL_FORMS,
+  LEGAL_FORM_LABELS,
+  LEGAL_FORM_DESCRIPTIONS,
+  REQUIRED_DOCUMENTS,
+} from "@contracts/naeya";
 
 const OFFERS = [
   {
@@ -18,7 +23,7 @@ const OFFERS = [
     ],
   },
   {
-    name: "SARL",
+    name: "SARL / SARLU",
     forme: "SARL" as const,
     pitch:
       "La structure pour associer et grandir : statuts sur mesure et accompagnement complet.",
@@ -84,6 +89,33 @@ export default function Services() {
               </Link>
             </article>
           ))}
+        </div>
+
+        <div className="mt-16">
+          <h2 className="font-display text-2xl font-bold">
+            Toutes les formes juridiques accompagnées
+          </h2>
+          <p className="mt-2 max-w-2xl text-[#17233D]/75">
+            Le parcours s'adapte à la forme choisie. Les listes de pièces sont
+            indicatives et précisées avec un conseiller lors de l'instruction.
+          </p>
+          <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {LEGAL_FORMS.map((forme) => (
+              <li key={forme}>
+                <Link
+                  to={`/demande?forme=${forme}`}
+                  className="block h-full rounded-xl border border-[#17233D]/12 bg-[#F7F2E7] p-4 transition hover:border-[#173DFF]/50"
+                >
+                  <span className="font-semibold text-[#17233D]">
+                    {LEGAL_FORM_LABELS[forme]}
+                  </span>
+                  <span className="mt-1 block text-sm text-[#17233D]/65">
+                    {LEGAL_FORM_DESCRIPTIONS[forme]}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
 
         <div className="mt-16 rounded-2xl bg-[#17233D] p-8 text-[#F1EBDD]">

@@ -30,4 +30,8 @@ export const env = {
   sessionSecret,
   databaseUrl: required("DATABASE_URL"),
   ownerEmail: optional("OWNER_EMAIL").trim().toLowerCase(),
+  supabaseUrl: optional("SUPABASE_URL").trim(),
+  supabaseServiceRoleKey: optional("SUPABASE_SERVICE_ROLE_KEY").trim(),
+  supabaseStorageBucket:
+    optional("SUPABASE_STORAGE_BUCKET").trim() || "naeya-documents",
 };
